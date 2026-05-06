@@ -1,6 +1,3 @@
-Here's the complete README in the exact format you want (starting directly with sections):
-
-```markdown
 ## 📖 Overview
 **reCAPTCHA Token Harvester** is a proof-of-concept security research tool that demonstrates how reCAPTCHA v3 tokens can be programmatically harvested using browser automation. 
 
