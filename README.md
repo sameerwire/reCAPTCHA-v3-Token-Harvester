@@ -198,7 +198,7 @@ This modular approach improves:
 
 ## 🔗 Related Work
 
-* Medium Writeup: *(add your article link here)*
-* Author: Security Researcher (VAPT / Application Security)
+* Medium Writeup: https://medium.com/@sameerimr384/bypassing-recaptcha-v3-during-vapt-a-case-study-in-automated-sqli-validation-a54d259ab1d9
+* Author: Muhammad Sameer - InfoSec Consultant (VAPT / Application Security)
 
 ---
